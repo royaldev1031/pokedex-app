@@ -52,3 +52,5 @@ You don't have to ever use `eject`. The curated feature set is suitable for smal
 2. Created sharable and reusable UI components such as Button and Card
 3. Used React.memo to prevent the re-rendering of Header component
 4. Retrieved pokemon data using fetch function and useEffect hook
+5. Optimized API fetching by using localStorage to cache the data and avoid unnecessary API calls.
+6. Memoized the handleClick function using useCallback to prevent unnecessary re-renders.
