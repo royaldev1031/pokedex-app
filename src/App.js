@@ -1,29 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import CardList from './components/CardList'
 import Header from './components/Header'
 import Button from './components/Button'
+import Loading from './components/Loading'
+import Error from './components/Error'
 
 const API_URL = 'https://pokeapi.co/api/v2/pokemon?limit=10'
 
 function App() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [pokemons, setPokemons] = useState(null)
+  const [status, setStatus] = useState({ loading: true, error: null })
 
-  async function fetchData(url) {
+  const fetchData = async (url) => {
     try {
-      setLoading(true)
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data: ${response.status}`)
-      }
+      setStatus({ loading: true, error: null })
+      const cachedData = localStorage.getItem(url)
 
-      const result = await response.json()
-      setData(result)
+      if (cachedData) {
+        setPokemons(JSON.parse(cachedData))
+      } else {
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.status}`)
+        }
+
+        const result = await response.json()
+        setPokemons(result)
+        localStorage.setItem(url, JSON.stringify(result))
+      }
     } catch (error) {
-      setError(error.message)
+      setStatus({ loading: false, error: error.message })
     } finally {
-      setLoading(false)
+      setStatus({ loading: false, error: null })
     }
   }
 
@@ -31,31 +39,32 @@ function App() {
     fetchData(API_URL)
   }, [])
 
-  const handleClick = (url) => {
+  const handleClick = useCallback((url) => {
     fetchData(url)
-  }
-
-  if (error) {
-    return <p className="text-center">Error: {error}</p>
-  }
+  }, [])
 
   return (
     <div className="w-full items-center p-10 bg-slate-100 min-h-screen">
       <Header />
-      {loading ? (
-        <p className="text-center text-lg p-5">Loading...</p>
+      {status.loading ? (
+        <Loading />
+      ) : status.error ? (
+        <Error message={status.error} />
       ) : (
         <>
-          {data.results.length && <CardList pokemons={data.results} />}
+          {pokemons?.results.length && <CardList pokemons={pokemons.results} />}
           <div className="flex justify-center space-x-2">
-            {data.previous && (
-              <Button onClick={() => handleClick(data.previous)} type="primary">
+            {pokemons?.previous && (
+              <Button
+                onClick={() => handleClick(pokemons.previous)}
+                type="primary"
+              >
                 Prev
               </Button>
             )}
 
-            {data.next && (
-              <Button onClick={() => handleClick(data.next)} type="success">
+            {pokemons?.next && (
+              <Button onClick={() => handleClick(pokemons.next)} type="success">
                 Next
               </Button>
             )}
